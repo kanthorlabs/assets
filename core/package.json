@@ -1,0 +1,20 @@
+{
+  "name": "@kanthorlabs/assets-core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "typescript": "7.0.2",
+    "vitest": "4.1.9"
+  }
+}

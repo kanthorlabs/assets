@@ -20,11 +20,14 @@ with a Cloudflare `403` before the Worker.
 | `/f/<uuid>/<basename>` | A private file from the R2 key `f/<uuid>/<basename>`. |
 
 `/ip` returns plain text. If the `Accept` header contains `application/json`,
-`/ip` returns `{"ip":"<ip>"}`.
+`/ip` returns `{"ip":"<ip>"}`. The address is the IP of the connection: IPv4
+for an IPv4 connection, IPv6 for an IPv6 connection. To get the IPv4 address,
+use `curl -4`.
 
 ```sh
 curl https://assets.kanthorlabs.com/
 curl https://assets.kanthorlabs.com/ip
+curl -4 https://assets.kanthorlabs.com/ip
 curl -H 'Accept: application/json' https://assets.kanthorlabs.com/ip
 curl -O https://assets.kanthorlabs.com/a/<path>.<ext>
 curl -O https://assets.kanthorlabs.com/f/<uuid>/<basename>

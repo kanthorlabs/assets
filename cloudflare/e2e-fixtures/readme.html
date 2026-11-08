@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Assets README</title></head>
+<body>
+<h1>Assets</h1>
+<p>Assets is a read-only file service on <code>https://assets.kanthorlabs.com</code>.
+One Cloudflare Worker serves public assets and private links from one private
+Cloudflare R2 bucket.</p>
+<p>Source: <a href="https://github.com/kanthorlabs/assets">https://github.com/kanthorlabs/assets</a></p>
+<h2>Routes</h2>
+<p>The Worker accepts <code>GET</code> and <code>HEAD</code> only. For another method it returns <code>405</code>,
+and for an unknown path <code>404</code>. In production, a zone rule blocks both cases
+with a Cloudflare <code>403</code> before the Worker.</p>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/</code></td>
+<td>This README as plain text.</td>
+</tr>
+<tr>
+<td><code>/ip</code></td>
+<td>The client IP address.</td>
+</tr>
+<tr>
+<td><code>/a/&lt;path&gt;.&lt;ext&gt;</code></td>
+<td>A public asset from the R2 key <code>a/&lt;path&gt;.&lt;ext&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>/f/&lt;uuid&gt;/&lt;basename&gt;</code></td>
+<td>A private file from the R2 key <code>f/&lt;uuid&gt;/&lt;basename&gt;</code>.</td>
+</tr>
+</tbody></table>
+<p><code>/ip</code> returns plain text. If the <code>Accept</code> header contains <code>application/json</code>,
+<code>/ip</code> returns <code>{&quot;ip&quot;:&quot;&lt;ip&gt;&quot;}</code>.</p>
+<pre><code class="language-sh">curl https://assets.kanthorlabs.com/
+curl https://assets.kanthorlabs.com/ip
+curl -H &#39;Accept: application/json&#39; https://assets.kanthorlabs.com/ip
+curl -O https://assets.kanthorlabs.com/a/&lt;path&gt;.&lt;ext&gt;
+curl -O https://assets.kanthorlabs.com/f/&lt;uuid&gt;/&lt;basename&gt;
+</code></pre>
+<p><code>&lt;uuid&gt;</code> is a lowercase UUIDv4. The unguessable UUID protects a forward link.
+The <a href="docs/reference/api.md">HTTP API</a> gives the validation rules, status codes
+and headers.</p>
+<h2>Features</h2>
+<ul>
+<li>Single byte range requests return <code>206</code> on <code>/a/</code> and <code>/f/</code>.</li>
+<li>A weak <code>If-None-Match</code> match returns <code>304</code>. Cloudflare removes <code>ETag</code> from
+HTML responses, so HTML gets no <code>304</code>.</li>
+<li><code>HEAD</code> returns the same status and headers as <code>GET</code>, with no body.</li>
+<li>HTML and SVG responses carry a <code>Content-Security-Policy</code> sandbox.</li>
+<li>The service only reads. Uploads follow the
+<a href="docs/reference/upload-contract.md">upload contract</a> in a separate workspace.</li>
+<li>Workers Free is the hard cost cap. Each request makes at most one R2 call.
+The one exception is an unsatisfiable range, which makes two R2 calls.</li>
+</ul>
+<h2>Quick start</h2>
+<p>Requirements:</p>
+<ul>
+<li>Node 24.15.0</li>
+<li>pnpm 11.24.0</li>
+</ul>
+<p>Run these commands from the repository root:</p>
+<pre><code class="language-sh">pnpm install --frozen-lockfile
+pnpm run check
+</code></pre>
+<p><code>pnpm run check</code> runs typecheck, lint, tests and the production build.
+The checks need no Cloudflare account and no credentials.</p>
+<p>To run the Worker locally, run this command from <code>cloudflare/</code>:</p>
+<pre><code class="language-sh">pnpm run dev
+</code></pre>
+<p>The Worker listens on <code>http://localhost:8787</code> with a local R2 bucket named
+<code>assets-local</code>. To put objects in that bucket, follow
+<a href="cloudflare/e2e-fixtures/README.md#run-the-suite-against-the-local-worker">E2E fixtures</a>.</p>
+<h2>Project layout</h2>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>core/</code></td>
+<td><code>@kanthorlabs/assets-core</code>: platform-independent request logic.</td>
+</tr>
+<tr>
+<td><code>cloudflare/</code></td>
+<td><code>@kanthorlabs/assets-cloudflare</code>: Worker entry, R2 reader, tooling, tests.</td>
+</tr>
+<tr>
+<td><code>cloudflare/zone-rules/</code></td>
+<td>Zone rules: rate limit, method and path allowlist, kill switch.</td>
+</tr>
+<tr>
+<td><code>docs/</code></td>
+<td>Platform-independent contracts: API, acceptance, upload, security.</td>
+</tr>
+<tr>
+<td><code>cloudflare/docs/</code></td>
+<td>Cloudflare operations: deploy, credentials, CI, incident, architecture.</td>
+</tr>
+<tr>
+<td><code>.github/workflows/</code></td>
+<td>CI: checks on each pull request, deploy and live E2E on <code>main</code>.</td>
+</tr>
+</tbody></table>
+<h2>Deploy</h2>
+<p>CI deploys each push to <code>main</code> and then runs the live E2E suite. A manual
+deploy runs <code>pnpm run deploy</code> from <code>cloudflare/</code> with a private
+<code>.env.production</code> file. The deploy refuses to take over resources that another
+deployment owns. For the first deploy, follow
+<a href="cloudflare/docs/how-to/deploy.md">Deploy to Cloudflare</a>.</p>
+<h2>Documentation</h2>
+<p>The documentation follows the Diátaxis structure (<a href="https://diataxis.fr/">https://diataxis.fr/</a>).</p>
+<ul>
+<li>How-to guides:
+<a href="cloudflare/docs/how-to/deploy.md">deploy</a>,
+<a href="cloudflare/docs/how-to/credentials.md">credentials</a>,
+<a href="cloudflare/docs/how-to/ci.md">CI</a>,
+<a href="cloudflare/docs/how-to/incident.md">incident runbook</a>.</li>
+<li>Reference:
+<a href="docs/reference/api.md">HTTP API</a>,
+<a href="docs/reference/acceptance.md">acceptance checks</a>,
+<a href="docs/reference/upload-contract.md">upload contract</a>,
+<a href="cloudflare/docs/reference/configuration.md">configuration</a>,
+<a href="cloudflare/docs/reference/tooling.md">commands and tooling</a>,
+<a href="cloudflare/e2e-fixtures/README.md">E2E fixtures</a>.</li>
+<li>Explanation:
+<a href="docs/explanation/security.md">security model</a>,
+<a href="cloudflare/docs/explanation/architecture.md">architecture and cost cap</a>.</li>
+</ul>
+<h2>Security and abuse protection</h2>
+<p>Report a vulnerability in a private security advisory, not in a public issue.
+On GitHub, go to <code>kanthorlabs/assets</code>, open the Security tab and select
+&quot;Report a vulnerability&quot;. Select the matching CWE in the report.</p>
+<p>Request controls:</p>
+<ul>
+<li>The Worker accepts <code>GET</code> and <code>HEAD</code> only.</li>
+<li>Strict validation applies to each path. A forward id must be a lowercase
+UUIDv4.</li>
+<li>The validator rejects traversal, percent-encoded characters, backslash,
+dotfiles and empty segments.</li>
+<li>The Worker ignores the query string.</li>
+<li>Error bodies are plain text with the reason phrase only. They never contain
+exception text.</li>
+</ul>
+<p>Response headers:</p>
+<ul>
+<li>Every response has <code>X-Content-Type-Options: nosniff</code> and
+<code>Referrer-Policy: no-referrer</code>.</li>
+<li>HTML and SVG responses carry a <code>Content-Security-Policy</code> sandbox. A PDF never
+gets the sandbox.</li>
+<li>The service sets no cookies.</li>
+<li><code>/f/</code> responses carry <code>Cache-Control: no-store</code>.</li>
+<li>Only <code>/a/</code> responses carry <code>Access-Control-Allow-Origin: *</code>.</li>
+</ul>
+<p>Edge controls (zone rules in <code>cloudflare/zone-rules/</code>):</p>
+<ul>
+<li>A rate limit blocks an IP for 10 s after 50 requests in 10 s on <code>/</code>, <code>/ip</code>,
+<code>/a/</code> and <code>/f/</code>.</li>
+<li>A custom rule blocks other methods and other paths.</li>
+<li>A kill switch rule blocks the hostname. It is disabled.</li>
+<li>A configuration rule keeps HTML unchanged.</li>
+</ul>
+<p>Cost cap:</p>
+<ul>
+<li>Workers Free is the hard cap: 100,000 requests per day. A flood is an outage
+until 00:00 UTC, not a bill.</li>
+<li>Each request makes at most one R2 call. An unsatisfiable range makes two.</li>
+<li>No R2 S3 credentials exist. The deploy and CI tokens have no R2 permission.</li>
+<li>R2 egress is free.</li>
+<li>The account preflight checks the cost cap conditions. A <code>$3</code> budget alert
+reports a charge outside the cost model.</li>
+<li>The worst case is about $1.35 per month, for 100 GB of R2 storage.</li>
+</ul>
+<p>See the <a href="docs/explanation/security.md">security model</a>, the
+<a href="cloudflare/docs/how-to/incident.md">incident runbook</a> and the
+<a href="docs/reference/upload-contract.md">upload contract</a>.</p>
+<h2>Contribute</h2>
+<ol>
+<li>Open an issue or a pull request on <code>kanthorlabs/assets</code>.</li>
+<li>Run <code>pnpm run check</code> before you push. The command must exit with <code>0</code>.</li>
+<li>Write commit messages in the Conventional Commits format, for example
+<code>fix: answer 416 on production R2</code>.</li>
+</ol>
+<h2>License</h2>
+<p>MIT. See <a href="LICENSE">LICENSE</a>.</p>
+</body>
+</html>

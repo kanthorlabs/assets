@@ -22,19 +22,19 @@ Upload the test objects through the upload flow. Follow the [upload contract](up
 
 | Mode | Check | Expected result |
 | --- | --- | --- |
-| Asset | `GET /a/e2e/fixture.html` | `200`, exact fixture bytes, `text/html; charset=utf-8`, `public, max-age=300`, `Access-Control-Allow-Origin: *`, CSP sandbox, `nosniff`, `Accept-Ranges: bytes`. |
+| Asset | `GET /a/e2e/readme.html` | `200`, exact fixture bytes, `text/html; charset=utf-8`, `public, max-age=300`, `Access-Control-Allow-Origin: *`, CSP sandbox, `nosniff`, `Accept-Ranges: bytes`. |
 | Asset | `HEAD` on the HTML fixture | `200`, the same `Content-Type` and `Cache-Control` as `GET`, no body. |
 | Asset | `Range: bytes=0-99` on the HTML fixture | `206`, `Content-Range: bytes 0-99/<size>`, the first 100 bytes. |
-| Asset | `GET /a/e2e/fixture.txt` | `200`, exact fixture bytes, `text/plain; charset=utf-8`, `Content-Length`, `public, max-age=300`, `Access-Control-Allow-Origin: *`, no CSP, `nosniff`, `ETag`. |
+| Asset | `GET /a/e2e/readme.txt` | `200`, exact fixture bytes, `text/plain; charset=utf-8`, `Content-Length`, `public, max-age=300`, `Access-Control-Allow-Origin: *`, no CSP, `nosniff`, `ETag`. |
 | Asset | `HEAD` on the text fixture | `200`, the same `Content-Type`, `Content-Length`, `ETag` and `Cache-Control` as `GET`, no body. |
 | Asset | `If-None-Match: <etag>` on the text fixture | `304` with the same `ETag` and `Access-Control-Allow-Origin: *`. |
 | Asset | `Range: bytes=0-99` on the text fixture | `206`, `Content-Range: bytes 0-99/<size>`, `Content-Length: 100`, the first 100 bytes. |
 | Asset | Random absent key | Worker error `404`. |
-| Asset | `/a/e2e/fixture.unknown` | Worker error `404`. |
-| Asset | `/a/e2e/.hidden.html`, `/a/e2e%2Ffixture.html`, `/a/e2e%5Cfixture.html` | Worker error `400`. |
+| Asset | `/a/e2e/readme.unknown` | Worker error `404`. |
+| Asset | `/a/e2e/.hidden.html`, `/a/e2e%2Freadme.html`, `/a/e2e%5Creadme.html` | Worker error `400`. |
 | Asset | Raw path `/a/e2e/../e2e/missing.html` | Worker error `400` or `404`. Cloudflare can normalize dot segments. |
 | Asset | `POST` and `OPTIONS` on the fixture | Cloudflare block `403`, or Worker error `405` with `Allow: GET, HEAD`. |
-| Forward | `GET` on the fixture PDF | `200`, exact bytes, `application/pdf`, `inline; filename*=UTF-8''fixture.pdf`, `no-store`, `nosniff`, no CSP, no CORS. |
+| Forward | `GET` on the fixture PDF | `200`, exact bytes, `application/pdf`, `inline; filename*=UTF-8''readme.pdf`, `no-store`, `nosniff`, no CSP, no CORS. |
 | Forward | `HEAD` on the fixture | Same headers as `GET`, no body. |
 | Forward | `Range: bytes=0-99` | `206`, `Content-Range: bytes 0-99/<size>`, `Content-Length: 100`, the first 100 bytes. |
 | Forward | Random lowercase UUIDv4 | Worker error `404`. |

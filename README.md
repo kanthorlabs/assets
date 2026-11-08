@@ -8,7 +8,9 @@ Source: https://github.com/kanthorlabs/assets
 
 ## Routes
 
-The Worker accepts `GET` and `HEAD` only. All other paths return `404`.
+The Worker accepts `GET` and `HEAD` only. For another method it returns `405`,
+and for an unknown path `404`. In production, a zone rule blocks both cases
+with a Cloudflare `403` before the Worker.
 
 | Route | Response |
 | --- | --- |
@@ -110,14 +112,55 @@ The documentation follows the Diátaxis structure (https://diataxis.fr/).
   [security model](docs/explanation/security.md),
   [architecture and cost cap](cloudflare/docs/explanation/architecture.md).
 
-## Security
+## Security and abuse protection
 
-Do not report a vulnerability in a public issue. Open a private security
-advisory on GitHub: go to `kanthorlabs/assets`, open the Security tab and
-select "Report a vulnerability".
+Report a vulnerability in a private security advisory, not in a public issue.
+On GitHub, go to `kanthorlabs/assets`, open the Security tab and select
+"Report a vulnerability". Select the matching CWE in the report.
 
-The [security model](docs/explanation/security.md) describes the trust
-boundaries and the controls.
+Request controls:
+
+- The Worker accepts `GET` and `HEAD` only.
+- Strict validation applies to each path. A forward id must be a lowercase
+  UUIDv4.
+- The validator rejects traversal, percent-encoded characters, backslash,
+  dotfiles and empty segments.
+- The Worker ignores the query string.
+- Error bodies are plain text with the reason phrase only. They never contain
+  exception text.
+
+Response headers:
+
+- Every response has `X-Content-Type-Options: nosniff` and
+  `Referrer-Policy: no-referrer`.
+- HTML and SVG responses carry a `Content-Security-Policy` sandbox. A PDF never
+  gets the sandbox.
+- The service sets no cookies.
+- `/f/` responses carry `Cache-Control: no-store`.
+- Only `/a/` responses carry `Access-Control-Allow-Origin: *`.
+
+Edge controls (zone rules in `cloudflare/zone-rules/`):
+
+- A rate limit blocks an IP for 10 s after 50 requests in 10 s on `/`, `/ip`,
+  `/a/` and `/f/`.
+- A custom rule blocks other methods and other paths.
+- A kill switch rule blocks the hostname. It is disabled.
+- A configuration rule keeps HTML unchanged.
+
+Cost cap:
+
+- Workers Free is the hard cap: 100,000 requests per day. A flood is an outage
+  until 00:00 UTC, not a bill.
+- Each request makes at most one R2 call. An unsatisfiable range makes two.
+- No R2 S3 credentials exist. The deploy and CI tokens have no R2 permission.
+- R2 egress is free.
+- The account preflight checks the cost cap conditions. A `$3` budget alert
+  reports a charge outside the cost model.
+- The worst case is about $1.35 per month, for 100 GB of R2 storage.
+
+See the [security model](docs/explanation/security.md), the
+[incident runbook](cloudflare/docs/how-to/incident.md) and the
+[upload contract](docs/reference/upload-contract.md).
 
 ## Contribute
 

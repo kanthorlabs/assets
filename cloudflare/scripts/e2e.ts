@@ -113,10 +113,10 @@ async function assetMode(base: string, fixture: Fixture): Promise<void> {
   await expectHead(base, fixture, headers, ["Content-Type", "Cache-Control"]);
   await expectRange(base, fixture, false);
   await expectError(base, `/a/e2e/missing-${randomUUID()}.html`, 404);
-  await expectError(base, "/a/e2e/fixture.unknown", 404);
+  await expectError(base, "/a/e2e/readme.unknown", 404);
   await expectError(base, "/a/e2e/.hidden.html", 400);
-  await expectError(base, "/a/e2e%2Ffixture.html", 400);
-  await expectError(base, "/a/e2e%5Cfixture.html", 400);
+  await expectError(base, "/a/e2e%2Freadme.html", 400);
+  await expectError(base, "/a/e2e%5Creadme.html", 400);
   await expectTraversalRefused(base, "/a/e2e");
   await expectMethodRefused(base, fixture.path);
 }

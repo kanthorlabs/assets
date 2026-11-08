@@ -48,3 +48,45 @@ jobs:
       - run: pnpm run check
       - name: Validate workflow
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/cloudflare.yml
+
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: cloudflare
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+        with:
+          version: 11.24.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Materialize private production configuration
+        run: node scripts/ci-environment.ts
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ASSETS_WORKER_NAME: ${{ secrets.ASSETS_WORKER_NAME }}
+          ASSETS_HOSTNAME: ${{ secrets.ASSETS_HOSTNAME }}
+          ASSETS_BASE_URL: ${{ secrets.ASSETS_BASE_URL }}
+          ASSETS_R2_BUCKET: ${{ secrets.ASSETS_R2_BUCKET }}
+      - name: Check production build without uploading
+        run: pnpm run deploy --dry-run
+      - name: Deploy Worker and Custom Domain
+        run: pnpm run deploy
+      - name: Wait for HTTPS and run live E2E
+        run: node scripts/wait-ready.ts && pnpm run test:e2e
+        env:
+          ASSETS_BASE_URL: ${{ secrets.ASSETS_BASE_URL }}
+      - name: Remove local production credentials
+        if: always()
+        run: rm -f .env.production

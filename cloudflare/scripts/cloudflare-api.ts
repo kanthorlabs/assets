@@ -7,6 +7,17 @@ interface ApiEnvelope<T> {
   result_info?: { total_pages?: number };
 }
 
+export class CloudflareApiError extends Error {
+  readonly status: number;
+  readonly codes: number[];
+
+  constructor(status: number, codes: number[]) {
+    super(`Cloudflare preflight refused with HTTP ${status}`);
+    this.status = status;
+    this.codes = codes;
+  }
+}
+
 export async function cloudflareApi<T>(values: ProductionEnvironment, path: string): Promise<T> {
   assert(path.startsWith("/") && !path.startsWith("//"), "Cloudflare API path is relative");
   assert(!path.includes("://"), "Cloudflare host cannot be overridden");
@@ -18,8 +29,13 @@ export async function cloudflareApi<T>(values: ProductionEnvironment, path: stri
     redirect: "error",
   });
   if (!response.ok) {
-    await response.body?.cancel();
-    throw new Error(`Cloudflare preflight refused with HTTP ${response.status}`);
+    const failure = (await response.json().catch(() => undefined)) as
+      | { errors?: { code?: unknown }[] }
+      | undefined;
+    const codes = (failure?.errors ?? [])
+      .map((item) => item.code)
+      .filter((code): code is number => typeof code === "number");
+    throw new CloudflareApiError(response.status, codes);
   }
   const body = (await response.json()) as ApiEnvelope<T>;
   if (body.success !== true) throw new Error("Cloudflare API operation failed");

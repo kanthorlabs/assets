@@ -59,7 +59,7 @@ Put the token in `.env.production` as `CLOUDFLARE_API_TOKEN`. Hosted CI runners 
    pnpm run preflight --account
    ```
 
-7. Make sure that the output contains `Workers Free: no Workers Paid subscription found.` and `Cost cap checks passed.`
+7. Make sure that the output contains `Workers Free: no Workers Paid subscription found.` and `Cost cap checks passed.` The output can also contain information lines about other private buckets and Logpush. See [Cost cap checks](../reference/configuration.md#cost-cap-checks).
 8. Run `unset CLOUDFLARE_API_TOKEN`.
 9. Delete the token in the dashboard. Remove `.env.preflight`.
 

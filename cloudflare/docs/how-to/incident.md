@@ -45,7 +45,7 @@ The `$3` budget alert sends a next-day email for a charge outside the cost model
 
 1. In **Billing > Billable Usage**, find the product that bills.
 2. Run the account preflight. Follow [Run the account preflight](credentials.md#run-the-account-preflight).
-3. Fix each failure that the preflight reports. For example, remove a second bucket, `r2.dev` access or a Logpush job to R2.
+3. Fix each failure that the preflight reports. For example, remove `r2.dev` access or a custom domain from a bucket, or remove a Logpush job to R2.
 4. If the preflight warns about Workers Paid, the hard cost cap does not apply. Check the Workers plan of the account.
 5. Check R2 storage and R2 writes against the [upload contract](../../../docs/reference/upload-contract.md).
 

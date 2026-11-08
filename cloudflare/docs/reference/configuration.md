@@ -85,13 +85,18 @@ Before an upload, `pnpm run deploy` runs the remote preflight. It stops the depl
 | Check | API call | Failure |
 | --- | --- | --- |
 | Workers plan | `GET /accounts/{id}/subscriptions` | A plan with `worker` in its id or name prints a warning: the hard cost cap does not apply. |
-| One bucket | `GET /accounts/{id}/r2/buckets` | The account has a bucket other than `ASSETS_R2_BUCKET`. |
 | Storage class | `GET /accounts/{id}/r2/buckets/{bucket}` | The default storage class is not `Standard`. |
 | No `r2.dev` | `GET .../domains/managed` | `r2.dev` access is enabled. |
 | No custom domain | `GET .../domains/custom` | The bucket has a custom domain. |
 | No Sippy | `GET .../sippy` | Sippy is enabled. |
-| No Cache Reserve | `GET /zones/{zone}/cache/cache_reserve` | Cache Reserve is not `off`. |
-| No Logpush to R2 | `GET /accounts/{id}/logpush/jobs` and `GET /zones/{zone}/logpush/jobs` | A job has an `r2://` destination. |
+| Other buckets private | `GET /accounts/{id}/r2/buckets`, then `.../domains/managed` and `.../domains/custom` of each other bucket | Another bucket has `r2.dev` access or a custom domain. The error names the bucket. |
+| No Cache Reserve | `GET /zones/{zone}/cache/cache_reserve` | Cache Reserve is not `off`. HTTP `403` with error code `1135` counts as `off`. Another error fails. |
+| No Logpush to R2 | `GET /accounts/{id}/logpush/jobs` and `GET /zones/{zone}/logpush/jobs` | A job has an `r2://` destination. HTTP `403` with error code `10000` counts as no jobs. Another error fails. |
+
+The preflight prints these lines as information. They do not fail the preflight:
+
+- `Other private R2 buckets: <names>.` when the account has other buckets without public access. A private bucket costs money only through authenticated callers. A public bucket is an uncapped cost path on the same account.
+- `Logpush not available on this plan.` when a Logpush endpoint returns HTTP `403` with error code `10000`.
 
 ## Zone rules
 

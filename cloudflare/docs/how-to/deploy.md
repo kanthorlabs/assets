@@ -88,7 +88,7 @@ The output is `Live E2E passed for asset and forward modes.` A failure after the
 
 Do this step once, after the first deploy. Use a short-lived zone rules token from [Credentials](credentials.md#create-the-zone-rules-token).
 
-1. If `ASSETS_HOSTNAME` is not `assets.kanthorlabs.com`, change `http.host` in `zone-rules/http_request_firewall_custom.json`.
+1. If `ASSETS_HOSTNAME` is not `assets.kanthorlabs.com`, change `http.host` in `zone-rules/http_request_firewall_custom.json` and `zone-rules/http_config_settings.json`.
 2. Check that no other hostname on the zone uses the one Free rate limit rule.
 3. Read the token and set the zone id:
 
@@ -97,7 +97,7 @@ Do this step once, after the first deploy. Use a short-lived zone rules token fr
    ZONE=<zone-id>
    ```
 
-4. For each phase, read the phase entrypoint ruleset. The phases are `http_request_firewall_custom` and `http_ratelimit`.
+4. For each phase, read the phase entrypoint ruleset. The phases are `http_request_firewall_custom`, `http_ratelimit` and `http_config_settings`.
 
    ```sh
    PHASE=http_request_firewall_custom
@@ -123,7 +123,7 @@ Do this step once, after the first deploy. Use a short-lived zone rules token fr
    done
    ```
 
-7. Do steps 4 to 6 again with `PHASE=http_ratelimit`.
+7. Do steps 4 to 6 again with `PHASE=http_ratelimit`. Then do steps 4 to 6 again with `PHASE=http_config_settings`.
 8. Run `unset CF_WAF_TOKEN`. Delete the token in the dashboard.
 9. In the dashboard, open **Billing > Billable Usage**. Create one budget alert at `$3`.
 10. Run the checks in [Acceptance: edge and zone rules](../../../docs/reference/acceptance.md#edge-and-zone-rules).

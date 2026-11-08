@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { StorageUnavailable } from "@kanthorlabs/assets-core";
 import { beforeAll, describe, expect, it } from "vitest";
 import { r2Reader } from "../src/r2-reader.ts";
-import { countedBucket, failingBucket } from "./buckets.ts";
+import { countedBucket, failingBucket, unsatisfiableRangeBucket } from "./buckets.ts";
 
 const KEY = "a/reader/digits.bin";
 let httpEtag = "";
@@ -59,6 +59,31 @@ describe("r2Reader", () => {
       await expect(object?.body?.cancel()).resolves.toBeUndefined();
     },
   );
+
+  it("returns the size without a range when R2 rejects the range with 10039", async () => {
+    const { bucket, calls } = countedBucket(unsatisfiableRangeBucket(env.ASSETS_BUCKET));
+    const object = await r2Reader(bucket).read(KEY, "GET", { offset: 12, length: 5 });
+    expect(object).toEqual({ body: null, size: 10, etag: httpEtag });
+    expect(calls).toEqual(["get", "head"]);
+  });
+
+  it("returns null when R2 rejects the range with 10039 for a missing object", async () => {
+    const reader = r2Reader(unsatisfiableRangeBucket(env.ASSETS_BUCKET));
+    expect(await reader.read("a/reader/missing.bin", "GET", { offset: 12, length: 5 })).toBeNull();
+  });
+
+  it.each([
+    ["a satisfiable start", { offset: 2, length: 3 }],
+    ["a suffix", { offset: -3, length: 3 }],
+  ])("maps a 10039 rejection for %s to StorageUnavailable", async (_name, range) => {
+    const reader = r2Reader(unsatisfiableRangeBucket(env.ASSETS_BUCKET));
+    await expect(reader.read(KEY, "GET", range)).rejects.toBeInstanceOf(StorageUnavailable);
+  });
+
+  it("maps a 10039 rejection without a range to StorageUnavailable", async () => {
+    const reader = r2Reader(unsatisfiableRangeBucket(env.ASSETS_BUCKET));
+    await expect(reader.read(KEY, "GET")).rejects.toBeInstanceOf(StorageUnavailable);
+  });
 
   it("returns null for a missing object", async () => {
     const reader = r2Reader(env.ASSETS_BUCKET);

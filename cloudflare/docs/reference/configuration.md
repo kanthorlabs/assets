@@ -107,10 +107,12 @@ The zone rules are in `cloudflare/zone-rules/`, in the Rulesets API format. Appl
 | `http_request_firewall_custom.json` | `http_request_firewall_custom` | `assets: allow only GET and HEAD on /a/ and /f/` | `http.host eq "assets.kanthorlabs.com" and (not http.request.method in {"GET" "HEAD"} or not (starts_with(http.request.uri.path, "/a/") or starts_with(http.request.uri.path, "/f/")))` | Block, enabled |
 | `http_request_firewall_custom.json` | `http_request_firewall_custom` | `assets: kill switch` | `http.host eq "assets.kanthorlabs.com"` | Block, disabled |
 | `http_ratelimit.json` | `http_ratelimit` | `assets: 50 requests per 10 s per IP on /a/ and /f/` | `starts_with(http.request.uri.path, "/a/") or starts_with(http.request.uri.path, "/f/")` | Block, enabled |
+| `http_config_settings.json` | `http_config_settings` | `assets: serve HTML unchanged` | `http.host eq "assets.kanthorlabs.com"` | Set configuration, enabled |
 
 Constraints:
 
-- The custom rules contain the hostname `assets.kanthorlabs.com`. For another `ASSETS_HOSTNAME`, change `http.host` in the file before you apply it.
+- The custom rules and the configuration rule contain the hostname `assets.kanthorlabs.com`. For another `ASSETS_HOSTNAME`, change `http.host` in the files before you apply them.
+- The configuration rule turns off `email_obfuscation`, `automatic_https_rewrites` and `server_side_excludes` on the hostname. These zone settings rewrite HTML responses, remove `ETag` and `Content-Length`, and inject a script into shared HTML.
 - The rate limit counts per `cf.colo.id` and `ip.src`: 50 requests in a 10-second period, then a 10-second block.
 - The rate limit has no host filter, because the Free plan allows only path fields. It applies to `/a/` and `/f/` on every hostname of the zone.
 - The Free plan allows one rate limit rule per zone. Check that no other hostname on the zone uses it.

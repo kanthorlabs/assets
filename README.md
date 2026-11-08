@@ -18,7 +18,7 @@ The service only reads. Uploads run in a separate private workspace and follow t
 | `core/` | `@kanthorlabs/assets-core`: routes, validation, headers, Range, ETag and errors. Web-standard APIs only. |
 | `cloudflare/` | `@kanthorlabs/assets-cloudflare`: the Worker entry, the R2 reader, deploy tooling and tests. |
 | `cloudflare/scripts/` | Operator commands: preflight, deploy, readiness, live E2E and GitHub secret sync. |
-| `cloudflare/zone-rules/` | Zone rules in the Rulesets API format: rate limit, method and path allowlist, kill switch. |
+| `cloudflare/zone-rules/` | Zone rules in the Rulesets API format: rate limit, method and path allowlist, kill switch, HTML rewrite settings. |
 | `cloudflare/e2e-fixtures/` | The fixed objects that the live E2E suite reads. See [E2E fixtures](cloudflare/e2e-fixtures/README.md). |
 | `docs/` | Platform-independent contracts: API, acceptance, upload contract, security. |
 | `cloudflare/docs/` | Cloudflare operations: deploy, credentials, CI, incident, configuration, tooling, architecture. |

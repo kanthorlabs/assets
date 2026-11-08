@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import worker from "../src/index.ts";
-import { countedBucket, failingBucket } from "./buckets.ts";
+import { countedBucket, failingBucket, unsatisfiableRangeBucket } from "./buckets.ts";
 
 const BASE = "https://assets.test";
 const PAGE = "<!doctype html><h1>hello</h1>";
@@ -84,6 +84,21 @@ describe("worker asset mode on R2", () => {
     expect(response.headers.get("Content-Range")).toBe("bytes */10");
     expectErrorHeaders(response);
   });
+
+  it.each(["bytes=10-", "bytes=999999999999-"])(
+    "answers %s with 416 when R2 rejects the range with 10039",
+    async (range) => {
+      const bucket = unsatisfiableRangeBucket(env.ASSETS_BUCKET);
+      const response = await fetchWorker(
+        "/a/media/clip.mp4",
+        { headers: { Range: range } },
+        bucket,
+      );
+      expect(response.status).toBe(416);
+      expect(response.headers.get("Content-Range")).toBe("bytes */10");
+      expectErrorHeaders(response);
+    },
+  );
 
   it("answers 304 to the returned ETag in weak form", async () => {
     const response = await fetchWorker("/a/hello.html", {
@@ -240,5 +255,15 @@ describe("worker R2 call count", () => {
     const response = await fetchWorker(path, init, bucket);
     await response.body?.cancel();
     expect(calls).toEqual(expected);
+  });
+
+  it.each([
+    ["GET 416", "/a/media/clip.mp4"],
+    ["forward GET 416", DEMO],
+  ])("%s on a 10039 rejection makes a get and a head", async (_name, path) => {
+    const { bucket, calls } = countedBucket(unsatisfiableRangeBucket(env.ASSETS_BUCKET));
+    const response = await fetchWorker(path, { headers: { Range: "bytes=10-" } }, bucket);
+    expect(response.status).toBe(416);
+    expect(calls).toEqual(["get", "head"]);
   });
 });

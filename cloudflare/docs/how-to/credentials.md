@@ -67,7 +67,7 @@ A token in the environment file has priority over the shell token. The deploy to
 
 ## Create the zone rules token
 
-Give the token **Zone > Zone WAF > Edit** on the zone of `ASSETS_HOSTNAME`. Set the TTL end date to the current day. Delete the token after the change. An operator who edits the rules in the dashboard needs no token.
+Give the token **Zone > Zone WAF > Edit** and **Zone > Config Rules > Edit** on the zone of `ASSETS_HOSTNAME`. Set the TTL end date to the current day. Delete the token after the change. An operator who edits the rules in the dashboard needs no token.
 
 ## Seed the E2E fixtures
 

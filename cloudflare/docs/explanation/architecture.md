@@ -40,17 +40,19 @@ One `AssetReader` serves both modes. `createHandler({ assets })` returns the req
 8. A weak `If-None-Match` match cancels the body and returns `304`.
 9. The handler returns `200`, or `206` with `Content-Range`. It passes the R2 body stream through.
 
-The R2 reader sends the range to R2 as a `Range` header. For a start at or past the object size, R2 then returns the full object with its size. Core cancels the body and returns `416` with `bytes */<size>`, with no second call. The `206` range comes from the range that R2 returns, clamped to the size.
+The R2 reader sends the range to R2 as a `Range` header. For a start at or past the object size, production R2 throws an error with code `10039`. The reader then calls `head()` once and returns the size without a body. Miniflare returns the full object with its size instead. In both cases, core cancels any body and returns `416` with `bytes */<size>`. The `206` range comes from the range that R2 returns, clamped to the size.
 
-Every exception from `get()` or `head()` becomes `StorageUnavailable`, and the handler returns `503`. A stream error after the headers cannot become a `503`.
+Every other exception from `get()` or `head()` becomes `StorageUnavailable`, and the handler returns `503`. A stream error after the headers cannot become a `503`.
 
 The Worker never reads the body. The runtime pipes the bytes, so a large video uses almost no Worker CPU time. A large file costs one Worker request and one R2 read, whatever its size. Each range request of a video player costs one Worker request and one R2 read.
 
 ## One R2 call per request
 
-Each Worker request makes at most one R2 call. A `400`, a `405`, and a `404` that the route or the extension decides make no call. The reader never lists and never retries. A Miniflare test counts the bucket calls per route.
+Each Worker request makes at most one R2 call, with one exception. A `400`, a `405`, and a `404` that the route or the extension decides make no call. The reader never lists and never retries. A Miniflare test counts the bucket calls per route.
 
-With the Workers Free quota, this invariant keeps R2 reads at 100,000 per day or fewer.
+The exception is a `416` for a range start at or past the object size. Production R2 rejects that `get()` with error `10039`, so the reader makes one `head()` call to learn the size. That request makes two R2 calls. A test with a bucket double proves the `get` and `head` sequence.
+
+With the Workers Free quota, this invariant keeps R2 reads at 200,000 per day or fewer. That bound applies only if every request is an unsatisfiable range. Otherwise the bound is 100,000 per day.
 
 ## Storage
 
@@ -79,7 +81,7 @@ For a 31-day month:
 | Item | Bound | Cost |
 | --- | --- | --- |
 | Workers requests and CPU | Workers Free never bills. | $0 |
-| R2 reads | 100,000 × 31 = 3.1 M, under the free 10 M. | $0 |
+| R2 reads | 2 × 100,000 × 31 = 6.2 M, under the free 10 M. Two reads apply only to an unsatisfiable range. | $0 |
 | R2 writes | The upload contract keeps them under the free 1 M. | $0 |
 | R2 storage | The upload contract caps it at 100 GB: (100 − 10) × $0.015. | $1.35 |
 | S3 API and REST API | No credentials exist. | $0 |
@@ -90,7 +92,7 @@ For a 31-day month:
 The cap holds while these conditions are true:
 
 - Cloudflare enforces the Workers Free limits.
-- The code keeps the one-call invariant.
+- The code keeps the R2 call bound in [One R2 call per request](#one-r2-call-per-request).
 - The upload flow obeys the [upload contract](../../../docs/reference/upload-contract.md).
 - The account stays secure: 2FA, few members, and no broad OAuth profile for deploys.
 - The deploy and CI tokens have no R2 permission. No R2 S3 credentials exist. Requests that fail authentication do not bill.

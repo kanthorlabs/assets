@@ -45,6 +45,7 @@ Upload the test objects through the upload flow. Follow the [upload contract](up
 4. The kill switch rule exists and is disabled.
 5. The `$3` budget alert exists.
 6. `curl -sS -i $H/a/x.html` returns the Worker error `404`.
+7. The configuration rule `assets: serve HTML unchanged` exists and is enabled.
 
 ## Asset mode
 
@@ -66,7 +67,9 @@ Upload `a/hello.html`, `a/hello.js`, `a/font.woff2` and `a/video.mp4` (at least 
    - `curl -sS -i $H/a/.env.json`
 10. `curl -sS -i $H/a/missing.html` returns the Worker error `404`.
 
-A `503` in check 8 means that production R2 throws on a range past the end. The R2 reader then needs a fix.
+A `503` in check 8 means that production R2 throws on a range past the end with an error other than `10039`. The R2 reader then needs a fix.
+
+An HTML response without `ETag` or `Content-Length` in check 1 or check 3 means that the zone rewrites HTML. Check edge check 7.
 
 ## Forward mode
 

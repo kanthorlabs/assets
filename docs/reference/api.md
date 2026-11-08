@@ -81,6 +81,8 @@ A resumed download that sends `If-Range` therefore gets the full object again.
 
 The Worker compares `If-None-Match` with the object ETag by weak comparison. It removes `W/` from both sides. It accepts a comma-separated list and `*`. On a match, it cancels the R2 body and returns `304`. The ETag is the R2 `httpEtag` value.
 
+Cloudflare removes `ETag` and `Content-Length` from every `200` response with `text/html` on this zone. The body bytes do not change. An HTML response therefore has no `ETag` at the client, and HTML gets no `304`.
+
 The order in [Status codes](#status-codes) applies. A request with a range past the end returns `416`, also when its `If-None-Match` matches.
 
 ## Headers

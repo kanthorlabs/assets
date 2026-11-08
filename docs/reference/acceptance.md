@@ -18,14 +18,17 @@ Upload the test objects through the upload flow. Follow the [upload contract](up
 
 ## Automated live E2E
 
-`pnpm run test:e2e` reads the fixed fixtures from `cloudflare/e2e-fixtures/manifest.json`. It sends `Accept-Encoding: identity`, so edge compression does not change the length, Range and ETag checks.
+`pnpm run test:e2e` reads the fixed fixtures from `cloudflare/e2e-fixtures/manifest.json`. It sends `Accept-Encoding: identity`, so edge compression does not change the length, Range and ETag checks. Cloudflare removes `ETag` and `Content-Length` from every `200` response with `text/html` on this zone. The body bytes do not change. The suite therefore checks `ETag`, `Content-Length` and `304` on the text fixture, not on the HTML fixture.
 
 | Mode | Check | Expected result |
 | --- | --- | --- |
-| Asset | `GET /a/e2e/fixture.html` | `200`, exact fixture bytes, `text/html; charset=utf-8`, `public, max-age=300`, `Access-Control-Allow-Origin: *`, CSP sandbox, `nosniff`, `Accept-Ranges: bytes`, `ETag`. |
-| Asset | `HEAD` on the fixture | `200`, the same `Content-Type`, `Content-Length`, `ETag` and `Cache-Control` as `GET`, no body. |
-| Asset | `If-None-Match: <etag>` | `304` with the same `ETag` and `Access-Control-Allow-Origin: *`. |
-| Asset | `Range: bytes=0-99` | `206`, `Content-Range: bytes 0-99/<size>`, `Content-Length: 100`, the first 100 bytes. |
+| Asset | `GET /a/e2e/fixture.html` | `200`, exact fixture bytes, `text/html; charset=utf-8`, `public, max-age=300`, `Access-Control-Allow-Origin: *`, CSP sandbox, `nosniff`, `Accept-Ranges: bytes`. |
+| Asset | `HEAD` on the HTML fixture | `200`, the same `Content-Type` and `Cache-Control` as `GET`, no body. |
+| Asset | `Range: bytes=0-99` on the HTML fixture | `206`, `Content-Range: bytes 0-99/<size>`, the first 100 bytes. |
+| Asset | `GET /a/e2e/fixture.txt` | `200`, exact fixture bytes, `text/plain; charset=utf-8`, `Content-Length`, `public, max-age=300`, `Access-Control-Allow-Origin: *`, no CSP, `nosniff`, `ETag`. |
+| Asset | `HEAD` on the text fixture | `200`, the same `Content-Type`, `Content-Length`, `ETag` and `Cache-Control` as `GET`, no body. |
+| Asset | `If-None-Match: <etag>` on the text fixture | `304` with the same `ETag` and `Access-Control-Allow-Origin: *`. |
+| Asset | `Range: bytes=0-99` on the text fixture | `206`, `Content-Range: bytes 0-99/<size>`, `Content-Length: 100`, the first 100 bytes. |
 | Asset | Random absent key | Worker error `404`. |
 | Asset | `/a/e2e/fixture.unknown` | Worker error `404`. |
 | Asset | `/a/e2e/.hidden.html`, `/a/e2e%2Ffixture.html`, `/a/e2e%5Cfixture.html` | Worker error `400`. |
@@ -51,9 +54,9 @@ Upload the test objects through the upload flow. Follow the [upload contract](up
 
 Upload `a/hello.html`, `a/hello.js`, `a/font.woff2` and `a/video.mp4` (at least 1 GB). The page loads `<script type="module" src="/a/hello.js">` and a `@font-face` from `/a/font.woff2`.
 
-1. `curl -sS -i --compressed $H/a/hello.html` returns `200`, `text/html; charset=utf-8`, the CSP sandbox, an `ETag`, `public, max-age=300`, `Access-Control-Allow-Origin: *`, `nosniff` and `no-referrer`.
-2. `curl -sS -i --compressed -H 'If-None-Match: <etag>' $H/a/hello.html` returns `304` with no body. Use the `W/` ETag from check 1.
-3. `curl -sS -I $H/a/hello.html` returns the same headers and `Content-Length` as `GET`.
+1. `curl -sS -i --compressed $H/a/hello.html` returns `200`, `text/html; charset=utf-8`, the CSP sandbox, `public, max-age=300`, `Access-Control-Allow-Origin: *`, `nosniff` and `no-referrer`.
+2. `curl -sS -i --compressed $H/a/hello.js` returns `200` and an `ETag`. `curl -sS -i --compressed -H 'If-None-Match: <etag>' $H/a/hello.js` returns `304` with no body.
+3. `curl -sS -I $H/a/hello.html` returns the same headers as `GET`.
 4. In a browser, the module script runs and the font loads, with no CORS errors.
 5. In a browser, `a/video.mp4` plays and seeks. DevTools shows `206` responses.
 6. `curl -sS -r 0-99 -o part -D - $H/a/video.mp4 && wc -c part` returns `206`, `bytes 0-99/<size>` and 100 bytes.
@@ -69,7 +72,7 @@ Upload `a/hello.html`, `a/hello.js`, `a/font.woff2` and `a/video.mp4` (at least 
 
 A `503` in check 8 means that production R2 throws on a range past the end with an error other than `10039`. The R2 reader then needs a fix.
 
-An HTML response without `ETag` or `Content-Length` in check 1 or check 3 means that the zone rewrites HTML. Check edge check 7.
+Cloudflare removes `ETag` and `Content-Length` from every `200` response with `text/html` on this zone. An HTML response therefore has no `ETag` and no `304`. An HTML body that differs from the uploaded bytes means that the zone rewrites HTML. Check edge check 7.
 
 ## Forward mode
 

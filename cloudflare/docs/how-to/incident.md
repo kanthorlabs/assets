@@ -8,7 +8,7 @@ Use this runbook for a request flood, abusive content or a budget alert. The [ar
 - After the quota ends, Workers return error `1027` until 00:00 UTC. Workers Free never bills.
 - The webhook service shares this quota. A flood stops both services until 00:00 UTC. A flood is an outage, not a bill.
 - A request that a zone rule blocks uses no Worker request and no R2 read.
-- The rate limit rule blocks an IP for 10 seconds after 50 requests in 10 seconds on `/a/` or `/f/`.
+- The rate limit rule blocks an IP for 10 seconds after 50 requests in 10 seconds on `/a/`, `/f/`, `/` or `/ip`.
 
 ## Zone rules for an incident
 
@@ -16,8 +16,8 @@ Edit the rules in the dashboard of the zone, in the WAF custom rules and rate li
 
 | Rule | Normal state | Incident use |
 | --- | --- | --- |
-| `assets: 50 requests per 10 s per IP on /a/ and /f/` | Enabled, 50 requests per 10 seconds | Lower the request count. |
-| `assets: allow only GET and HEAD on /a/ and /f/` | Enabled | Keep enabled. |
+| `assets: 50 requests per 10 s per IP on /a/, /f/, / and /ip` | Enabled, 50 requests per 10 seconds | Lower the request count. |
+| `assets: allow only GET and HEAD on /a/, /f/, / and /ip` | Enabled | Keep enabled. |
 | `assets: kill switch` | Disabled | Enable it to block every request to the hostname. |
 
 ## Respond to a flood

@@ -1,9 +1,11 @@
-export type Route = { mode: "asset" | "forward"; path: string };
+export type Route = { mode: "asset" | "forward"; path: string } | { mode: "home" | "ip" };
 
 const ASSET_PREFIX = "/a/";
 const FORWARD_PREFIX = "/f/";
 
 export function route(pathname: string): Route | null {
+  if (pathname === "/") return { mode: "home" };
+  if (pathname === "/ip") return { mode: "ip" };
   if (pathname.endsWith("/")) return null;
   if (pathname.startsWith(ASSET_PREFIX)) {
     return { mode: "asset", path: pathname.slice(ASSET_PREFIX.length) };

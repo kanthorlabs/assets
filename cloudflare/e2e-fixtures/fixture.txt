@@ -1,2 +1,0 @@
-KanthorLabs assets E2E fixture. Do not delete: the live E2E suite reads this object.
-It checks ETag, Content-Length, 304 and Range on a non-HTML asset.

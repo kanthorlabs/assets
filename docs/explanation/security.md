@@ -51,7 +51,7 @@ A forward id is a UUIDv4. Its 122 random bits make the link unguessable. The lin
 
 To revoke a link, delete its object. Forward responses carry `Cache-Control: no-store`, so the revocation takes effect at once. `Referrer-Policy: no-referrer` keeps the URL of a served page out of the `Referer` header.
 
-The E2E forward fixture has a UUID that is in this repository. It is public test content, not a secret link.
+The E2E forward fixture has the fixed UUID `00000000-0000-4000-8000-000000000000` that is in this repository. It is public test content on purpose, not a secret link. Real forward links use a random UUIDv4.
 
 ## Path isolation
 

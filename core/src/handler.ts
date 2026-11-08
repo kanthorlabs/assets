@@ -1,3 +1,4 @@
+import { acceptsJson } from "./accept.ts";
 import { contentTypeFor } from "./content-type.ts";
 import { errorResponse } from "./errors.ts";
 import { weakMatch } from "./etag.ts";
@@ -5,6 +6,8 @@ import {
   assetHeaders,
   forwardHeaders,
   forwardNotModifiedHeaders,
+  homeHeaders,
+  ipHeaders,
   notModifiedHeaders,
 } from "./headers.ts";
 import { type AssetObject, type AssetReader, StorageUnavailable } from "./ports.ts";
@@ -19,9 +22,15 @@ type HeaderPolicy = {
   notModified: (etag: string) => Headers;
 };
 
-export function createHandler(deps: { assets: AssetReader }): (req: Request) => Promise<Response> {
+export type HandlerDeps = {
+  assets: AssetReader;
+  home: string;
+  clientIp: (req: Request) => string | null;
+};
+
+export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Response> {
   return async (req) => {
-    const response = await serve(deps.assets, req).catch(failure);
+    const response = await serve(deps, req).catch(failure);
     return req.method === "HEAD"
       ? new Response(null, { status: response.status, headers: response.headers })
       : response;
@@ -32,15 +41,34 @@ function failure(error: unknown): Response {
   return errorResponse(error instanceof StorageUnavailable ? 503 : 500);
 }
 
-async function serve(assets: AssetReader, req: Request): Promise<Response> {
+async function serve(deps: HandlerDeps, req: Request): Promise<Response> {
   if (req.method !== "GET" && req.method !== "HEAD") {
     return errorResponse(405, { Allow: "GET, HEAD" });
   }
   const target = route(new URL(req.url).pathname);
   if (!target) return errorResponse(404);
-  return target.mode === "asset"
-    ? serveAsset(assets, req, req.method, target.path)
-    : serveForward(assets, req, req.method, target.path);
+  switch (target.mode) {
+    case "home":
+      return new Response(deps.home, { status: 200, headers: homeHeaders(byteLength(deps.home)) });
+    case "ip":
+      return serveIp(deps.clientIp(req), req);
+    case "asset":
+      return serveAsset(deps.assets, req, req.method, target.path);
+    case "forward":
+      return serveForward(deps.assets, req, req.method, target.path);
+  }
+}
+
+function serveIp(ip: string | null, req: Request): Response {
+  if (!ip) return errorResponse(500);
+  const json = acceptsJson(req.headers.get("Accept"));
+  const body = json ? JSON.stringify({ ip }) : ip;
+  const contentType = json ? "application/json; charset=utf-8" : "text/plain; charset=utf-8";
+  return new Response(body, { status: 200, headers: ipHeaders(contentType, byteLength(body)) });
+}
+
+function byteLength(text: string): number {
+  return new TextEncoder().encode(text).byteLength;
 }
 
 async function serveAsset(

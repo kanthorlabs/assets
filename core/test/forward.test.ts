@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createHandler, StorageUnavailable } from "../src/index.ts";
-import { fakeAssets } from "./fake-assets.ts";
+import { fakeAssets, noInfo } from "./fake-assets.ts";
 
 const BASE = "https://assets.test";
 const ID = "7d444840-9dc0-41dc-9b52-0b2a3f3b1e4a";
@@ -18,7 +18,7 @@ const OBJECTS = {
 
 function setup() {
   const fake = fakeAssets(OBJECTS);
-  return { ...fake, handle: createHandler({ assets: fake.assets }) };
+  return { ...fake, handle: createHandler({ ...noInfo, assets: fake.assets }) };
 }
 
 function request(path: string, init: RequestInit = {}): Request {
@@ -215,6 +215,7 @@ describe("forward storage errors", () => {
     ["any other error", new Error("internal secret detail"), 500, "Internal Server Error"],
   ])("maps %s without leaked text", async (_name, error, status, body) => {
     const handle = createHandler({
+      ...noInfo,
       assets: {
         read: async () => {
           throw error;

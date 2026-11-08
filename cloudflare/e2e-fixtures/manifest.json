@@ -1,5 +1,5 @@
 {
-  "asset": { "key": "a/e2e/fixture.html", "file": "fixture.html" },
-  "text": { "key": "a/e2e/fixture.txt", "file": "fixture.txt" },
-  "forward": { "key": "f/081e110f-a070-4e95-ac4d-fdde8410d84c/fixture.pdf", "file": "fixture.pdf" }
+  "asset": { "key": "a/e2e/readme.html", "file": "readme.html" },
+  "text": { "key": "a/e2e/readme.txt", "file": "readme.txt" },
+  "forward": { "key": "f/00000000-0000-4000-8000-000000000000/readme.pdf", "file": "readme.pdf" }
 }

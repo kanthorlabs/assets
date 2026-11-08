@@ -1,4 +1,4 @@
-import { defineConfig, defineWorker } from "cf/config";
+import { bindings, defineConfig, defineWorker } from "cf/config";
 import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
 
 export default defineConfig({
@@ -15,5 +15,8 @@ export default defineConfig({
       traces: { enabled: false },
     },
     logpush: false,
+    env: {
+      ASSETS_BUCKET: bindings.r2({ name: process.env.ASSETS_R2_BUCKET ?? "assets-local" }),
+    },
   }),
 });

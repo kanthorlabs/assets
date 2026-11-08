@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [
     cloudflareTest({
       main: "./src/index.ts",
-      miniflare: { compatibilityDate: "2026-08-22" },
+      miniflare: { compatibilityDate: "2026-08-22", r2Buckets: ["ASSETS_BUCKET"] },
     }),
   ],
   test: { include: ["test/**/*.test.ts"], testTimeout: 30_000 },

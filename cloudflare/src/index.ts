@@ -1,7 +1,6 @@
-import { type AssetReader, createHandler } from "@kanthorlabs/assets-core";
-
-const noAssets: AssetReader = { read: async () => null };
+import { createHandler } from "@kanthorlabs/assets-core";
+import { r2Reader } from "./r2-reader.ts";
 
 export default {
-  fetch: createHandler({ assets: noAssets }),
-} satisfies ExportedHandler;
+  fetch: (request, env) => createHandler({ assets: r2Reader(env.ASSETS_BUCKET) })(request),
+} satisfies ExportedHandler<Env>;

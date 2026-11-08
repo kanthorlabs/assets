@@ -23,7 +23,11 @@ export function inspectBuild(config: Record<string, unknown>, values: Production
     "Build disables observability",
   );
   assert.equal(config.logpush, false, "Build disables Logpush");
-  assert.deepEqual(Object.keys(config.env ?? {}), [], "Build has no bindings");
+  assert.deepEqual(
+    config.env,
+    { ASSETS_BUCKET: { type: "r2", name: values.ASSETS_R2_BUCKET } },
+    "Build has only the ASSETS_BUCKET R2 binding to the intended bucket",
+  );
 }
 
 async function deploy(path: string, dryRun: boolean): Promise<void> {

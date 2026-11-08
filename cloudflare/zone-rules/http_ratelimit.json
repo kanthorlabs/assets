@@ -1,0 +1,16 @@
+{
+  "rules": [
+    {
+      "description": "assets: 50 requests per 10 s per IP on /a/ and /f/",
+      "expression": "starts_with(http.request.uri.path, \"/a/\") or starts_with(http.request.uri.path, \"/f/\")",
+      "action": "block",
+      "enabled": true,
+      "ratelimit": {
+        "characteristics": ["cf.colo.id", "ip.src"],
+        "period": 10,
+        "requests_per_period": 50,
+        "mitigation_timeout": 10
+      }
+    }
+  ]
+}

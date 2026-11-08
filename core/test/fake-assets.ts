@@ -36,3 +36,5 @@ export function fakeAssets(objects: Record<string, FakeObject>) {
   );
   return { assets: { read }, read, cancelled };
 }
+
+export const noInfo = { home: "", clientIp: () => null };

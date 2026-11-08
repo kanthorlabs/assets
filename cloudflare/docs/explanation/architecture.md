@@ -1,6 +1,6 @@
 # Architecture and cost cap
 
-One Cloudflare Worker serves `/a/` and `/f/` from one private R2 bucket. Zone rules run in front of the Worker. Workers Free is the hard cost cap.
+One Cloudflare Worker serves `/a/` and `/f/` from one private R2 bucket. It also serves `/` and `/ip`, which make no R2 call. Zone rules run in front of the Worker. Workers Free is the hard cost cap.
 
 ```text
 visitor ──► zone rules ──► Worker (core handler + R2 reader) ──► R2 bucket
@@ -26,19 +26,20 @@ interface AssetReader {
 }
 ```
 
-One `AssetReader` serves both modes. `createHandler({ assets })` returns the request handler.
+One `AssetReader` serves both modes. `createHandler({ assets, home, clientIp })` returns the request handler. `home` is the README text. The build bundles it into the Worker with a Vite `?raw` import. `clientIp` returns the client IP of a request. The Cloudflare adapter reads `CF-Connecting-IP`. Core has no Cloudflare header knowledge.
 
 ## Request flow
 
 1. The handler returns `405` for a method other than `GET` or `HEAD`.
-2. The route selects asset or forward mode from the prefix. Other paths return `404`.
-3. The mode validates the path. A failure returns `400`. Asset mode returns `404` for an unknown extension.
-4. The handler builds the key `a/<path>` or `f/<uuid>/<basename>`.
-5. On `GET` without `If-Range`, the handler parses `Range`.
-6. The R2 reader makes one call. `GET` calls `ASSETS_BUCKET.get(key, { range })`. `HEAD` calls `ASSETS_BUCKET.head(key)`.
-7. A `null` result returns `404`. A range start at or past the size returns `416`.
-8. A weak `If-None-Match` match cancels the body and returns `304`.
-9. The handler returns `200`, or `206` with `Content-Range`. It passes the R2 body stream through.
+2. The exact path `/` returns the bundled README text. The exact path `/ip` returns the client IP. These two routes make no R2 call and stop here.
+3. For other paths, the route selects asset or forward mode from the prefix. Other paths return `404`.
+4. The mode validates the path. A failure returns `400`. Asset mode returns `404` for an unknown extension.
+5. The handler builds the key `a/<path>` or `f/<uuid>/<basename>`.
+6. On `GET` without `If-Range`, the handler parses `Range`.
+7. The R2 reader makes one call. `GET` calls `ASSETS_BUCKET.get(key, { range })`. `HEAD` calls `ASSETS_BUCKET.head(key)`.
+8. A `null` result returns `404`. A range start at or past the size returns `416`.
+9. A weak `If-None-Match` match cancels the body and returns `304`.
+10. The handler returns `200`, or `206` with `Content-Range`. It passes the R2 body stream through.
 
 The R2 reader sends the range to R2 as a `Range` header. For a start at or past the object size, production R2 throws an error with code `10039`. The reader then calls `head()` once and returns the size without a body. Miniflare returns the full object with its size instead. In both cases, core cancels any body and returns `416` with `bytes */<size>`. The `206` range comes from the range that R2 returns, clamped to the size.
 
@@ -48,7 +49,7 @@ The Worker never reads the body. The runtime pipes the bytes, so a large video u
 
 ## One R2 call per request
 
-Each Worker request makes at most one R2 call, with one exception. A `400`, a `405`, and a `404` that the route or the extension decides make no call. The reader never lists and never retries. A Miniflare test counts the bucket calls per route.
+Each Worker request makes at most one R2 call, with one exception. A `400`, a `405`, and a `404` that the route or the extension decides make no call. The `/` and `/ip` routes make no call. The reader never lists and never retries. A Miniflare test counts the bucket calls per route.
 
 The exception is a `416` for a range start at or past the object size. Production R2 rejects that `get()` with error `10039`, so the reader makes one `head()` call to learn the size. That request makes two R2 calls. A test with a bucket double proves the `get` and `head` sequence.
 

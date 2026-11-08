@@ -135,3 +135,21 @@ Do not use `PUT` on an entrypoint that exists. A `PUT` replaces every rule in th
 Keep `ASSETS_WORKER_NAME`, `ASSETS_HOSTNAME` and the prefixes `/a/` and `/f/` stable. A change to the hostname or a prefix breaks every shared link.
 
 For a redeploy, run steps 5 and 6. For a token change, follow [Rotate the deploy token](credentials.md#rotate-the-deploy-token).
+
+## Update the zone rules for `/` and `/ip`
+
+The zone rule files changed. The allowlist rule and the rate limit rule now also cover the exact paths `/` and `/ip`. A zone that has the earlier rules blocks `/` and `/ip` at the edge. Do these steps once, before or after the redeploy that adds the routes.
+
+1. Read the token and set the zone id, as in step 3 of [Protect the hostname](#7-protect-the-hostname).
+2. For `PHASE=http_request_firewall_custom`, read the entrypoint, as in step 4 of the same section. Find the `id` of the rule `assets: allow only GET and HEAD on /a/ and /f/`. Set `RULESET` and `RULE`.
+3. Replace the rule with the first rule in the file:
+
+   ```sh
+   jq -c '.rules[0]' zone-rules/$PHASE.json | curl -sS -X PATCH \
+     -H "Authorization: Bearer $CF_WAF_TOKEN" -H "Content-Type: application/json" \
+     --data @- "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets/$RULESET/rules/$RULE"
+   ```
+
+4. Do steps 2 and 3 again with `PHASE=http_ratelimit` and the rule `assets: 50 requests per 10 s per IP on /a/ and /f/`.
+5. Run `unset CF_WAF_TOKEN`. Delete the token in the dashboard.
+6. Check that `curl -sS -i https://assets.kanthorlabs.com/ip` returns `200` with the client IP.

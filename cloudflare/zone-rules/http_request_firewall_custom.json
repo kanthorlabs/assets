@@ -1,8 +1,8 @@
 {
   "rules": [
     {
-      "description": "assets: allow only GET and HEAD on /a/ and /f/",
-      "expression": "http.host eq \"assets.kanthorlabs.com\" and (not http.request.method in {\"GET\" \"HEAD\"} or not (starts_with(http.request.uri.path, \"/a/\") or starts_with(http.request.uri.path, \"/f/\")))",
+      "description": "assets: allow only GET and HEAD on /a/, /f/, / and /ip",
+      "expression": "http.host eq \"assets.kanthorlabs.com\" and (not http.request.method in {\"GET\" \"HEAD\"} or not (starts_with(http.request.uri.path, \"/a/\") or starts_with(http.request.uri.path, \"/f/\") or http.request.uri.path eq \"/\" or http.request.uri.path eq \"/ip\"))",
       "action": "block",
       "enabled": true
     },

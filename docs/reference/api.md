@@ -1,10 +1,24 @@
 # HTTP API
 
-The service has two read-only routes on one origin. The first path segment selects the mode. The prefixes `/a/` and `/f/` are fixed. A change to a prefix breaks every shared link.
+The service has four read-only routes on one origin. The exact paths `/` and `/ip` select the home and IP routes. For other paths, the first path segment selects the mode. The prefixes `/a/` and `/f/` are fixed. A change to a prefix breaks every shared link.
 
 The Worker accepts `GET` and `HEAD` only. It ignores the query string. The query string never reaches storage.
 
 ## Routes
+
+### Home: `/`
+
+The Worker returns the text of the repository `README.md`. The build bundles the text into the Worker. The route makes no R2 call.
+
+### IP: `/ip`
+
+The Worker returns the client IP address. On Cloudflare, the value comes from the `CF-Connecting-IP` request header. The route makes no R2 call.
+
+The Worker parses `Accept` as a comma-separated list of media ranges. It ignores parameters, such as `q`, and case. If one media range is `application/json`, the body is `{"ip":"<ip>"}`. Otherwise, the body is the IP address as plain text, with no trailing newline. `*/*` alone gives plain text.
+
+If the runtime supplies no client IP, the Worker returns `500`. Cloudflare always sends `CF-Connecting-IP`, so a missing value is a server fault, not a client fault.
+
+The path must be exactly `/ip`. `/ip/` returns `404`.
 
 ### Asset: `/a/<path>`
 
@@ -39,8 +53,11 @@ The Worker checks the conditions in this order. The first condition that applies
 | Order | Condition | Status | Extra headers |
 | --- | --- | --- | --- |
 | 1 | Method other than `GET` or `HEAD`, on any path. `OPTIONS` is included. | `405` | `Allow: GET, HEAD` |
-| 2 | Path does not start with `/a/` or `/f/`. This includes `/`, `/a`, `/f`. | `404` | |
-| 2 | Path ends with `/`. This includes `/a/`, `/f/` and `/f/<uuid>/`. | `404` | |
+| 2 | Path is `/`. | `200` | See [Home](#home-and-ip). |
+| 2 | Path is `/ip` and the runtime supplies a client IP. | `200` | See [IP](#home-and-ip). |
+| 2 | Path is `/ip` and the runtime supplies no client IP. | `500` | |
+| 2 | Path is not `/` or `/ip`, and does not start with `/a/` or `/f/`. This includes `/a`, `/f`. | `404` | |
+| 2 | Path other than `/` ends with `/`. This includes `/ip/`, `/a/`, `/f/` and `/f/<uuid>/`. | `404` | |
 | 3 | Asset path or forward path fails validation. | `400` | |
 | 4 | Asset path has an unknown or absent extension. | `404` | |
 | 5 | R2 has no object for the key. | `404` | |
@@ -53,7 +70,7 @@ The Worker checks the conditions in this order. The first condition that applies
 
 `HEAD` returns the same status and headers as `GET`, with no body. This includes error responses.
 
-In production, zone rules run before the Worker. They block a method other than `GET` or `HEAD` with `403`. They also block a path outside `/a/` and `/f/`. These requests never reach the Worker. See [Cloudflare configuration](../../cloudflare/docs/reference/configuration.md#zone-rules).
+In production, zone rules run before the Worker. They block a method other than `GET` or `HEAD` with `403`. They also block a path that is not `/` or `/ip` and is outside `/a/` and `/f/`. These requests never reach the Worker. See [Cloudflare configuration](../../cloudflare/docs/reference/configuration.md#zone-rules).
 
 ## Range
 
@@ -93,6 +110,17 @@ The order in [Status codes](#status-codes) applies. A request with a range past 
 | --- | --- |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `no-referrer` |
+
+### Home and IP
+
+| Header | Home `200` | IP `200` |
+| --- | --- | --- |
+| `Content-Type` | `text/plain; charset=utf-8` | `application/json; charset=utf-8` for a JSON `Accept`, else `text/plain; charset=utf-8` |
+| `Content-Length` | Body size in bytes. | Body size in bytes. |
+| `Cache-Control` | `public, max-age=300` | `no-store` |
+| `Vary` | | `Accept` |
+
+These responses have no `ETag`, no `Accept-Ranges` and no CORS header. The Worker ignores `Range` and `If-None-Match` on these routes.
 
 ### Asset `200` and `206`
 

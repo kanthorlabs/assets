@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
+import readme from "../../README.md?raw";
 import worker from "../src/index.ts";
 import { countedBucket, failingBucket, unsatisfiableRangeBucket } from "./buckets.ts";
 
@@ -9,6 +10,7 @@ const SANDBOX = "sandbox allow-scripts allow-popups allow-popups-to-escape-sandb
 const ID = "7d444840-9dc0-41dc-9b52-0b2a3f3b1e4a";
 const REPORT = `/f/${ID}/report.pdf`;
 const DEMO = `/f/${ID}/demo.mp4`;
+const CLIENT_IP = "198.51.100.23";
 let pageEtag = "";
 let reportEtag = "";
 
@@ -224,6 +226,44 @@ describe("worker forward mode on R2", () => {
   });
 });
 
+describe("worker home and ip", () => {
+  it("serves the bundled README at /", async () => {
+    const response = await fetchWorker("/");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("text/plain; charset=utf-8");
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=300");
+    expect(response.headers.get("Content-Length")).toBe(
+      String(new TextEncoder().encode(readme).byteLength),
+    );
+    const body = await response.text();
+    expect(body.startsWith("# Assets\n")).toBe(true);
+    expect(body).toBe(readme);
+  });
+
+  it("serves the CF-Connecting-IP value at /ip", async () => {
+    const response = await fetchWorker("/ip", { headers: { "CF-Connecting-IP": CLIENT_IP } });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("text/plain; charset=utf-8");
+    expect(response.headers.get("Vary")).toBe("Accept");
+    expect(await response.text()).toBe(CLIENT_IP);
+  });
+
+  it("serves the CF-Connecting-IP value as JSON at /ip", async () => {
+    const response = await fetchWorker("/ip", {
+      headers: { "CF-Connecting-IP": CLIENT_IP, Accept: "application/json" },
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("application/json; charset=utf-8");
+    expect(await response.json()).toEqual({ ip: CLIENT_IP });
+  });
+
+  it("answers 500 at /ip without CF-Connecting-IP", async () => {
+    const response = await fetchWorker("/ip");
+    expect(response.status).toBe(500);
+    expectErrorHeaders(response);
+  });
+});
+
 describe("worker R2 call count", () => {
   it.each([
     ["GET 200", "/a/hello.html", {}, ["get"]],
@@ -250,6 +290,10 @@ describe("worker R2 call count", () => {
     ["forward 400 dotfile", `/f/${ID}/.env`, {}, []],
     ["forward 404 trailing slash", `/f/${ID}/`, {}, []],
     ["forward 405 method", REPORT, { method: "OPTIONS" }, []],
+    ["GET home", "/", {}, []],
+    ["HEAD home", "/", { method: "HEAD" }, []],
+    ["GET ip", "/ip", { headers: { "CF-Connecting-IP": CLIENT_IP } }, []],
+    ["HEAD ip", "/ip", { method: "HEAD", headers: { "CF-Connecting-IP": CLIENT_IP } }, []],
   ] as const)("%s makes the expected R2 calls", async (_name, path, init, expected) => {
     const { bucket, calls } = countedBucket(env.ASSETS_BUCKET);
     const response = await fetchWorker(path, init, bucket);

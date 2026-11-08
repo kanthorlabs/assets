@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { baseUrl, send, sendRawPath } from "./client.ts";
 
 const FIXTURES = new URL("../e2e-fixtures/", import.meta.url).pathname;
+const README = new URL("../../README.md", import.meta.url).pathname;
 const SANDBOX = "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-downloads";
 
 interface Fixture {
@@ -168,6 +169,28 @@ async function forwardMode(base: string, fixture: Fixture): Promise<void> {
   await expectError(base, `/f/${randomUUID()}/.${basename}`, 400);
 }
 
+async function homeAndIp(base: string): Promise<void> {
+  const home = await send(base, "/");
+  assert.equal(home.status, 200, "/: 200");
+  assert.equal(home.headers.get("Content-Type"), "text/plain; charset=utf-8", "/: text/plain");
+  assert.equal(home.headers.get("Cache-Control"), "public, max-age=300", "/: Cache-Control");
+  await expectBody(home, await readFile(README), "/");
+  const plain = await send(base, "/ip");
+  assert.equal(plain.status, 200, "/ip: 200");
+  assert.equal(plain.headers.get("Content-Type"), "text/plain; charset=utf-8", "/ip: text/plain");
+  assert.equal(plain.headers.get("Cache-Control"), "no-store", "/ip: no-store");
+  assert((await plain.text()).length > 0, "/ip: non-empty body");
+  const json = await send(base, "/ip", { headers: { Accept: "application/json" } });
+  assert.equal(json.status, 200, "/ip JSON: 200");
+  assert.equal(
+    json.headers.get("Content-Type"),
+    "application/json; charset=utf-8",
+    "/ip JSON: Content-Type",
+  );
+  const { ip } = (await json.json()) as { ip?: unknown };
+  assert(typeof ip === "string" && ip.length > 0, "/ip JSON: ip string");
+}
+
 if (import.meta.main) {
   try {
     const base = baseUrl(process.env.ASSETS_BASE_URL);
@@ -175,6 +198,7 @@ if (import.meta.main) {
     await assetMode(base, fixtures.asset);
     await textAssetMode(base, fixtures.text);
     await forwardMode(base, fixtures.forward);
+    await homeAndIp(base);
     console.log("Live E2E passed for asset and forward modes.");
   } catch (error) {
     console.error(

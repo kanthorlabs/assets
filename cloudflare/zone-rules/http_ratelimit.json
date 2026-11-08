@@ -1,8 +1,8 @@
 {
   "rules": [
     {
-      "description": "assets: 50 requests per 10 s per IP on /a/ and /f/",
-      "expression": "starts_with(http.request.uri.path, \"/a/\") or starts_with(http.request.uri.path, \"/f/\")",
+      "description": "assets: 50 requests per 10 s per IP on /a/, /f/, / and /ip",
+      "expression": "starts_with(http.request.uri.path, \"/a/\") or starts_with(http.request.uri.path, \"/f/\") or http.request.uri.path eq \"/\" or http.request.uri.path eq \"/ip\"",
       "action": "block",
       "enabled": true,
       "ratelimit": {

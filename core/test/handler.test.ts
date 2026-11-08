@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createHandler, StorageUnavailable } from "../src/index.ts";
-import { fakeAssets } from "./fake-assets.ts";
+import { fakeAssets, noInfo } from "./fake-assets.ts";
 
 const BASE = "https://assets.test";
 const SANDBOX = "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-downloads";
@@ -14,7 +14,7 @@ const OBJECTS = {
 
 function setup() {
   const fake = fakeAssets(OBJECTS);
-  return { ...fake, handle: createHandler({ assets: fake.assets }) };
+  return { ...fake, handle: createHandler({ ...noInfo, assets: fake.assets }) };
 }
 
 function request(path: string, init: RequestInit = {}): Request {
@@ -30,7 +30,7 @@ function expectErrorHeaders(response: Response) {
 
 describe("routing and validation", () => {
   it.each([
-    ["root", "/"],
+    ["ip with trailing slash", "/ip/"],
     ["unknown prefix", "/x"],
     ["prefix without slash", "/a"],
     ["empty asset path", "/a/"],
@@ -125,7 +125,7 @@ describe("methods", () => {
   });
 
   it.each([
-    ["/", 404],
+    ["/x", 404],
     ["/a/x%2Fy.html", 400],
     ["/a/missing.html", 404],
   ])("returns the error status for HEAD %s without a body", async (path, status) => {
@@ -191,7 +191,7 @@ describe("If-None-Match", () => {
 
   it("matches a weak stored ETag", async () => {
     const fake = fakeAssets({ "a/site.css": { data: "a{}", etag: 'W/"c1"' } });
-    const handle = createHandler({ assets: fake.assets });
+    const handle = createHandler({ ...noInfo, assets: fake.assets });
     const response = await handle(request("/a/site.css", { headers: { "If-None-Match": '"c1"' } }));
     expect(response.status).toBe(304);
   });
@@ -262,6 +262,7 @@ describe("storage errors", () => {
     ["any other error", new Error("internal secret detail"), 500, "Internal Server Error"],
   ])("maps %s without leaked text", async (_name, error, status, body) => {
     const handle = createHandler({
+      ...noInfo,
       assets: {
         read: async () => {
           throw error;

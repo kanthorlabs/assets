@@ -5,6 +5,7 @@ on:
     paths:
       - "core/**"
       - "cloudflare/**"
+      - "README.md"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -16,6 +17,7 @@ on:
     paths:
       - "core/**"
       - "cloudflare/**"
+      - "README.md"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"

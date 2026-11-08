@@ -12,7 +12,7 @@ The Worker returns the text of the repository `README.md`. The build bundles the
 
 ### IP: `/ip`
 
-The Worker returns the client IP address. On Cloudflare, the value comes from the `CF-Connecting-IP` request header. The route makes no R2 call.
+The Worker returns the client IP address. On Cloudflare, the value comes from the `CF-Connecting-IP` request header. The address is the IP of the connection: IPv4 for an IPv4 connection, IPv6 for an IPv6 connection. The Worker does not know the IPv4 address of a client that connects over IPv6. To get the IPv4 address, connect over IPv4, for example with `curl -4`. The route makes no R2 call.
 
 The Worker parses `Accept` as a comma-separated list of media ranges. It ignores parameters, such as `q`, and case. If one media range is `application/json`, the body is `{"ip":"<ip>"}`. Otherwise, the body is the IP address as plain text, with no trailing newline. `*/*` alone gives plain text.
 

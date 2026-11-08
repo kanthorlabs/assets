@@ -6,7 +6,7 @@
     "node": ">=24.15.0 <25"
   },
   "scripts": {
-    "dev": "cf dev",
+    "dev": "vite dev --port 8787 --strictPort --no-cors",
     "build": "cf build",
     "typecheck": "cf workers types && tsc --noEmit",
     "lint": "biome check .",

@@ -68,13 +68,13 @@ export async function checkCostCap(values: ProductionEnvironment): Promise<void>
 if (import.meta.main) {
   const { values } = parseArgs({
     options: {
-      "env-file": { type: "string", default: ".env.production" },
+      config: { type: "string", default: ".env.production" },
       remote: { type: "boolean", default: false },
       account: { type: "boolean", default: false },
     },
   });
   try {
-    const environment = await preflight(await loadEnvironment(values["env-file"]), values.remote);
+    const environment = await preflight(await loadEnvironment(values.config), values.remote);
     if (values.account) {
       const authenticated = authenticateDeployment(environment);
       const plan = await workersPlan(authenticated);

@@ -47,12 +47,12 @@ async function deploy(path: string, dryRun: boolean): Promise<void> {
 if (import.meta.main) {
   const { values } = parseArgs({
     options: {
-      "env-file": { type: "string", default: ".env.production" },
+      config: { type: "string", default: ".env.production" },
       "dry-run": { type: "boolean", default: false },
     },
   });
   try {
-    await deploy(values["env-file"], values["dry-run"]);
+    await deploy(values.config, values["dry-run"]);
     console.log(
       values["dry-run"]
         ? "Build/configuration checks passed. Nothing uploaded."

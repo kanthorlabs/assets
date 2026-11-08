@@ -31,10 +31,10 @@ If you change a fixture file, upload it again before the next push to `main`.
    pnpm exec cf r2 objects put f/081e110f-a070-4e95-ac4d-fdde8410d84c/fixture.pdf --local --persist-to .cloudflare/state --bucket-name assets-local --file e2e-fixtures/fixture.pdf
    ```
 
-2. Start the Worker. Disable the Vite CORS middleware, because it answers `OPTIONS` before the Worker:
+2. Start the Worker. The script disables the Vite CORS middleware, because it answers `OPTIONS` before the Worker:
 
    ```sh
-   pnpm exec vite dev --port 8787 --strictPort --no-cors
+   pnpm run dev
    ```
 
 3. In a second shell, run the suite:

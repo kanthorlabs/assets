@@ -49,19 +49,19 @@ Pass flags directly after the script name: `pnpm run deploy --dry-run`. Do not w
 | `pnpm run test:tooling` | `node --test test-tools/*.test.ts`. The Cloudflare API and `gh` are fakes. |
 | `pnpm run build` | `cf build`. It writes `.cloudflare/output/` and uploads nothing. |
 | `pnpm run check` | `typecheck`, `lint`, `test`, `test:tooling`, then `build`. |
-| `pnpm run dev` | `cf dev`. It starts `vite` with no arguments and cannot forward flags. Use the command in [Local Worker](#local-worker). |
+| `pnpm run dev` | `vite dev --port 8787 --strictPort --no-cors`. See [Local Worker](#local-worker). |
 
 Local checks need no credentials and make no call to a live Cloudflare account.
 
 ## Operator commands
 
-Run these from `cloudflare/`. Each command that reads the environment file accepts `--env-file PATH`. The default is `.env.production`. See [Configuration](configuration.md#environment-file).
+Run these from `cloudflare/`. Each command that reads the environment file accepts `--config PATH`. The default is `.env.production`. See [Configuration](configuration.md#environment-file).
 
 | Command | Flags | Effect |
 | --- | --- | --- |
-| `pnpm run preflight` | `--env-file`, `--remote`, `--account` | Validates the file. `--remote` also authenticates and runs the ownership checks. `--account` runs the cost cap checks. |
-| `pnpm run deploy` | `--env-file`, `--dry-run` | Remote preflight, build, build inspection, then upload. `--dry-run` skips authentication and the upload. |
-| `pnpm run sync-secrets` | `--env-file`, `--repo OWNER/REPOSITORY` | Copies each setting in the file to a GitHub repository secret through `gh`. `--repo` is required. |
+| `pnpm run preflight` | `--config`, `--remote`, `--account` | Validates the file. `--remote` also authenticates and runs the ownership checks. `--account` runs the cost cap checks. |
+| `pnpm run deploy` | `--config`, `--dry-run` | Remote preflight, build, build inspection, then upload. `--dry-run` skips authentication and the upload. |
+| `pnpm run sync-secrets` | `--config`, `--repo OWNER/REPOSITORY` | Copies each setting in the file to a GitHub repository secret through `gh`. `--repo` is required. |
 | `node scripts/wait-ready.ts` | None | Sends `GET /f/not-a-uuid/ready.pdf` and waits for the Worker `400` with `no-store` and `nosniff`. At most 24 attempts, 5 seconds apart. |
 | `pnpm run test:e2e` | None | Live E2E for asset and forward modes. See [Acceptance](../../../docs/reference/acceptance.md#automated-live-e2e). |
 | `node scripts/ci-environment.ts` | None | CI only. Writes `.env.production` from the process environment. It refuses to overwrite a file. |
@@ -75,10 +75,10 @@ The commands print no secret values and no CLI diagnostics. A failed deploy prin
 Run the Worker with a local R2 simulation from `cloudflare/`:
 
 ```sh
-pnpm exec vite dev --port 8787 --strictPort --no-cors
+pnpm run dev
 ```
 
-The local bucket is `assets-local`. Its state is in `cloudflare/.cloudflare/state`. Without `--no-cors`, the Vite CORS middleware answers `OPTIONS` before the Worker. To seed the local bucket and run the E2E suite, follow [E2E fixtures](../../e2e-fixtures/README.md#run-the-suite-against-the-local-worker).
+The local bucket is `assets-local`. Its state is in `cloudflare/.cloudflare/state`. The script uses `--no-cors`, because the Vite CORS middleware otherwise answers `OPTIONS` before the Worker. To seed the local bucket and run the E2E suite, follow [E2E fixtures](../../e2e-fixtures/README.md#run-the-suite-against-the-local-worker).
 
 ## Source map
 

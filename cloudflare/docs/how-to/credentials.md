@@ -53,7 +53,7 @@ Put the token in `.env.production` as `CLOUDFLARE_API_TOKEN`. Hosted CI runners 
    read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN
    ```
 
-6. Run the account preflight from `cloudflare/`. Add `--env-file ./.env.preflight` if you made that file in step 3.
+6. Run the account preflight from `cloudflare/`. Add `--config ./.env.preflight` if you made that file in step 3.
 
    ```sh
    pnpm run preflight --account

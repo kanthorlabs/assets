@@ -9,7 +9,7 @@ The deployer owns the configuration. No account id, Worker name, hostname or buc
 | `cloudflare/.env.example` | Template with placeholder values. It is in git. |
 | `cloudflare/.env.production` | Private operator configuration. It is the default path of every operator command. Git ignores it. CI writes a temporary copy and removes it at the end of the job. |
 
-Select another file with `--env-file PATH`. The file must exist. Node also reads `--env-file` and stops with `node: PATH: not found` when the file does not exist.
+Select another file with `--config PATH`. The file must exist.
 
 The file must obey these rules:
 

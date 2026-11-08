@@ -4,12 +4,12 @@ import { parseArgs } from "node:util";
 import { deploymentSettings, loadEnvironment, PRODUCTION_NAMES } from "./environment.ts";
 
 const { values } = parseArgs({
-  options: { "env-file": { type: "string", default: ".env.production" }, repo: { type: "string" } },
+  options: { config: { type: "string", default: ".env.production" }, repo: { type: "string" } },
 });
 try {
   if (!values.repo || !/^[\w.-]+\/[\w.-]+$/.test(values.repo))
     throw new Error("An explicit GitHub owner/repository is required");
-  const environment = await loadEnvironment(values["env-file"]);
+  const environment = await loadEnvironment(values.config);
   deploymentSettings(environment);
   assert(PRODUCTION_NAMES.length < 20, "Secret synchronization is allowlisted and bounded");
   for (const name of PRODUCTION_NAMES) {

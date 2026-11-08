@@ -57,7 +57,7 @@ The deploy job reads these repository secrets:
 
 5. Run `gh secret list --repo OWNER/REPOSITORY`. Make sure that it shows the six secrets.
 
-`sync-secrets` validates the file, then sends each value to `gh secret set` through stdin. It never prints a value. It requires `--repo`. It accepts `--env-file PATH`.
+`sync-secrets` validates the file, then sends each value to `gh secret set` through stdin. It never prints a value. It requires `--repo`. It accepts `--config PATH`.
 
 ## Run and inspect
 

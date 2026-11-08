@@ -40,10 +40,10 @@ pnpm run check
 Run this command from `cloudflare/`:
 
 ```sh
-pnpm exec vite dev --port 8787 --strictPort --no-cors
+pnpm run dev
 ```
 
-The Worker listens on `http://localhost:8787` with a local simulated R2 bucket named `assets-local`. The flag `--no-cors` is necessary, because the Vite CORS middleware otherwise answers `OPTIONS` before the Worker. To put objects in the local bucket and run the live E2E suite against the local Worker, follow [E2E fixtures](cloudflare/e2e-fixtures/README.md#run-the-suite-against-the-local-worker).
+The Worker listens on `http://localhost:8787` with a local simulated R2 bucket named `assets-local`. The script uses `--no-cors`, because the Vite CORS middleware otherwise answers `OPTIONS` before the Worker. To put objects in the local bucket and run the live E2E suite against the local Worker, follow [E2E fixtures](cloudflare/e2e-fixtures/README.md#run-the-suite-against-the-local-worker).
 
 ## Documentation
 

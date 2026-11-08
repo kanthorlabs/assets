@@ -1,13 +1,23 @@
 import { contentTypeFor } from "./content-type.ts";
 import { errorResponse } from "./errors.ts";
 import { weakMatch } from "./etag.ts";
-import { assetHeaders, notModifiedHeaders } from "./headers.ts";
-import { type AssetReader, StorageUnavailable } from "./ports.ts";
+import {
+  assetHeaders,
+  forwardHeaders,
+  forwardNotModifiedHeaders,
+  notModifiedHeaders,
+} from "./headers.ts";
+import { type AssetObject, type AssetReader, StorageUnavailable } from "./ports.ts";
 import { parseRange } from "./range.ts";
 import { route } from "./route.ts";
-import { isValidAssetPath } from "./validate.ts";
+import { isValidAssetPath, isValidForwardPath } from "./validate.ts";
 
 type Method = "GET" | "HEAD";
+
+type HeaderPolicy = {
+  object: (object: AssetObject) => Headers;
+  notModified: (etag: string) => Headers;
+};
 
 export function createHandler(deps: { assets: AssetReader }): (req: Request) => Promise<Response> {
   return async (req) => {
@@ -28,7 +38,9 @@ async function serve(assets: AssetReader, req: Request): Promise<Response> {
   }
   const target = route(new URL(req.url).pathname);
   if (!target) return errorResponse(404);
-  return serveAsset(assets, req, req.method, target.path);
+  return target.mode === "asset"
+    ? serveAsset(assets, req, req.method, target.path)
+    : serveForward(assets, req, req.method, target.path);
 }
 
 async function serveAsset(
@@ -40,11 +52,38 @@ async function serveAsset(
   if (!isValidAssetPath(path)) return errorResponse(400);
   const contentType = contentTypeFor(path.slice(path.lastIndexOf("/") + 1));
   if (!contentType) return errorResponse(404);
+  return serveObject(assets, req, method, `a/${path}`, {
+    object: (object) => assetHeaders(contentType, object),
+    notModified: notModifiedHeaders,
+  });
+}
+
+async function serveForward(
+  assets: AssetReader,
+  req: Request,
+  method: Method,
+  path: string,
+): Promise<Response> {
+  if (!isValidForwardPath(path)) return errorResponse(400);
+  const basename = path.slice(path.indexOf("/") + 1);
+  return serveObject(assets, req, method, `f/${path}`, {
+    object: (object) => forwardHeaders(basename, object),
+    notModified: forwardNotModifiedHeaders,
+  });
+}
+
+async function serveObject(
+  assets: AssetReader,
+  req: Request,
+  method: Method,
+  key: string,
+  headers: HeaderPolicy,
+): Promise<Response> {
   const range =
     method === "GET" && !req.headers.has("If-Range")
       ? parseRange(req.headers.get("Range"))
       : undefined;
-  const object = await assets.read(`a/${path}`, method, range);
+  const object = await assets.read(key, method, range);
   if (!object) return errorResponse(404);
   if (range && range.offset >= object.size) {
     await object.body?.cancel();
@@ -52,10 +91,10 @@ async function serveAsset(
   }
   if (weakMatch(req.headers.get("If-None-Match"), object.etag)) {
     await object.body?.cancel();
-    return new Response(null, { status: 304, headers: notModifiedHeaders(object.etag) });
+    return new Response(null, { status: 304, headers: headers.notModified(object.etag) });
   }
   return new Response(method === "HEAD" ? null : object.body, {
     status: object.range ? 206 : 200,
-    headers: assetHeaders(contentType, object),
+    headers: headers.object(object),
   });
 }

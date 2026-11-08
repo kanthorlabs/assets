@@ -35,10 +35,8 @@ describe("routing and validation", () => {
     ["prefix without slash", "/a"],
     ["empty asset path", "/a/"],
     ["trailing slash", "/a/img/"],
-    ["forward prefix", "/f/7d444840-9dc0-41dc-9b52-0b2a3f3b1e4a/report.pdf"],
     ["unknown extension", "/a/tool.exe"],
     ["no extension", "/a/README"],
-    ["parent segment normalized away", "/a/../f/x.pdf"],
     ["encoded parent normalized away", "/a/%2e%2e/index.html"],
   ])("returns 404 without a read for %s", async (_name, path) => {
     const { handle, read } = setup();
@@ -50,6 +48,7 @@ describe("routing and validation", () => {
   });
 
   it.each([
+    ["parent segment normalized into the forward prefix", "/a/../f/x.pdf"],
     ["encoded slash", "/a/x%2Fy.html"],
     ["encoded parent inside a segment", "/a/img/..%2f..%2fsecret.html"],
     ["encoded dot prefix", "/a/%2ehidden.html"],

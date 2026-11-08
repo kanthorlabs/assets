@@ -64,7 +64,7 @@ Run these from `cloudflare/`. Each command that reads the environment file accep
 | `pnpm run sync-secrets` | `--config`, `--repo OWNER/REPOSITORY` | Copies each setting in the file to a GitHub repository secret through `gh`. `--repo` is required. |
 | `node scripts/wait-ready.ts` | None | Sends `GET /f/not-a-uuid/ready.pdf` and waits for the Worker `400` with `no-store` and `nosniff`. At most 24 attempts, 5 seconds apart. |
 | `pnpm run test:e2e` | None | Live E2E for asset and forward modes. See [Acceptance](../../../docs/reference/acceptance.md#automated-live-e2e). |
-| `pnpm run fixtures` | None | Writes the E2E fixtures from the root `README.md`. See [E2E fixtures](../../e2e-fixtures/README.md#generate-the-fixtures). |
+| `pnpm run fixtures` | None | Writes the E2E fixtures from the root `README.md`. A README edit needs no fixture change. See [E2E fixtures](../../e2e-fixtures/README.md#generate-the-fixtures). |
 | `node scripts/ci-environment.ts` | None | CI only. Writes `.env.production` from the process environment. It refuses to overwrite a file. |
 
 `wait-ready.ts` and `test:e2e` read `ASSETS_BASE_URL` from the process environment. They follow no redirect and time out each request after 30 seconds.

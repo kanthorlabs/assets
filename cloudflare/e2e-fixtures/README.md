@@ -6,11 +6,13 @@ The live E2E suite (`pnpm run test:e2e`) reads three fixed objects from the R2 b
 | --- | --- | --- |
 | Asset | `a/e2e/readme.html` | `readme.html` |
 | Asset | `a/e2e/readme.txt` | `readme.txt` |
-| Forward | `f/081e110f-a070-4e95-ac4d-fdde8410d84c/readme.pdf` | `readme.pdf` |
+| Forward | `f/00000000-0000-4000-8000-000000000000/readme.pdf` | `readme.pdf` |
 
-The fixtures are public test content. The forward UUID is in this repository, so it is not a secret link.
+The fixtures are public test content on purpose. The forward fixture UUID is a fixed placeholder in this repository, so its link is not a secret. Real forward links use a random UUIDv4.
 
 ## Generate the fixtures
+
+The fixtures are a copy of the root `README.md` at one point in time. A README edit needs no fixture change.
 
 `scripts/fixtures.ts` derives the three files from the root `README.md`. `readme.html` is the README rendered as HTML. `readme.pdf` contains the README text. `readme.txt` is the README bytes unchanged. The output is deterministic.
 
@@ -20,9 +22,7 @@ Run this command from `cloudflare/`:
 pnpm run fixtures
 ```
 
-`pnpm run check` fails if the committed fixtures do not match the generator output.
-
-After a README change, run `pnpm run fixtures`, commit, and seed the production bucket before the merge.
+To refresh the fixtures, run `pnpm run fixtures`, commit, and seed the production bucket before the merge.
 
 ## Seed the production bucket
 
@@ -33,7 +33,7 @@ Run these commands from `cloudflare/` with a short-lived credential that can wri
 ```sh
 pnpm exec cf r2 objects put a/e2e/readme.html --bucket-name <bucket> --file e2e-fixtures/readme.html --cf-r2-storage-class Standard
 pnpm exec cf r2 objects put a/e2e/readme.txt --bucket-name <bucket> --file e2e-fixtures/readme.txt --cf-r2-storage-class Standard
-pnpm exec cf r2 objects put f/081e110f-a070-4e95-ac4d-fdde8410d84c/readme.pdf --bucket-name <bucket> --file e2e-fixtures/readme.pdf --cf-r2-storage-class Standard
+pnpm exec cf r2 objects put f/00000000-0000-4000-8000-000000000000/readme.pdf --bucket-name <bucket> --file e2e-fixtures/readme.pdf --cf-r2-storage-class Standard
 ```
 
 ## Run the suite against the local Worker
@@ -43,7 +43,7 @@ pnpm exec cf r2 objects put f/081e110f-a070-4e95-ac4d-fdde8410d84c/readme.pdf --
    ```sh
    pnpm exec cf r2 objects put a/e2e/readme.html --local --persist-to .cloudflare/state --bucket-name assets-local --file e2e-fixtures/readme.html
    pnpm exec cf r2 objects put a/e2e/readme.txt --local --persist-to .cloudflare/state --bucket-name assets-local --file e2e-fixtures/readme.txt
-   pnpm exec cf r2 objects put f/081e110f-a070-4e95-ac4d-fdde8410d84c/readme.pdf --local --persist-to .cloudflare/state --bucket-name assets-local --file e2e-fixtures/readme.pdf
+   pnpm exec cf r2 objects put f/00000000-0000-4000-8000-000000000000/readme.pdf --local --persist-to .cloudflare/state --bucket-name assets-local --file e2e-fixtures/readme.pdf
    ```
 
 2. Start the Worker. The script disables the Vite CORS middleware, because it answers `OPTIONS` before the Worker:
